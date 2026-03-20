@@ -1,0 +1,56 @@
+﻿git : remote: error: GH013: Repository rule 
+violations found for refs/heads/main.        
+At line:1 char:1
++ git push origin main 2>&1 | Out-File -Encoding 
+utf8 d:\mindbridge\pus ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (remote: 
+    error: ...s/main.        :String) [], RemoteExc  
+  eption
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓ
+ÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö
+ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö        
+remote:     Resolve the following violations before 
+pushing again        
+remote: 
+remote:     - Push cannot contain secrets        
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a blocked push 
+       
+remote:      https://docs.github.com/code-security/se
+cret-scanning/working-with-secret-scanning-and-push-p
+rotection/working-with-push-protection-from-the-comma
+nd-line#resolving-a-blocked-push        
+remote:             
+remote:             
+remote:       ΓÇöΓÇö Groq API Key ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓ
+ÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö
+ΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇöΓÇö        
+remote:        locations:        
+remote:          - commit: 
+581f5bf841c86dde1a0f441962989bdb2164a0ff        
+remote:            path: config.py:13        
+remote:          - commit: 
+581f5bf841c86dde1a0f441962989bdb2164a0ff        
+remote:            path: config/config.py:13        
+remote:             
+remote:        (?) To push, remove secret from 
+commit(s) or follow this URL to allow the secret.    
+    
+remote:        https://github.com/sshreeshantha22cs13
+1nc-cloud/MindBridge/security/secret-scanning/unblock
+-secret/3BDgVEAAwTHAt6Ucb3qpVtmSyCW        
+remote:             
+remote: 
+remote: 
+To https://github.com/sshreeshantha22cs131nc-cloud/Mi
+ndBridge.git
+ ! [remote rejected] main -> main (push declined due 
+to repository rule violations)
+error: failed to push some refs to 'https://github.co
+m/sshreeshantha22cs131nc-cloud/MindBridge.git'
