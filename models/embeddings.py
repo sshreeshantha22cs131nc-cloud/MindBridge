@@ -53,7 +53,7 @@ def embed_texts(texts: list) -> list:
         model = get_embedding_model()
         if model is None:
             return []
-        embeddings = model.encode(texts, convert_to_numpy=True)
+        embeddings = model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
         return embeddings
 
     except Exception as e:
@@ -75,7 +75,7 @@ def embed_query(query: str):
         model = get_embedding_model()
         if model is None:
             return None
-        return model.encode([query], convert_to_numpy=True)[0]
+        return model.encode([query], convert_to_numpy=True, normalize_embeddings=True)[0]
 
     except Exception as e:
         print(f"[ERROR] Failed to embed query: {e}")

@@ -15,11 +15,12 @@ Flow:
 """
 
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 import PyPDF2
 import io
 from models.embeddings import embed_texts, embed_query
 from config.config import CHUNK_SIZE, CHUNK_OVERLAP, TOP_K_RESULTS
+
+MIN_SIMILARITY_THRESHOLD = 0.2
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
@@ -123,6 +124,9 @@ def retrieve_relevant_chunks(query: str, vector_store: dict) -> str:
     """
     Finds the most relevant document chunks for a given query.
 
+    Optimized: Uses np.argpartition O(n) instead of np.argsort O(n log n)
+    for selecting top-K elements.
+
     Parameters:
     - query: User's question
     - vector_store: The dict created by build_vector_store()
@@ -140,22 +144,36 @@ def retrieve_relevant_chunks(query: str, vector_store: dict) -> str:
         if len(embeddings) == 0:
             return ""
 
-        # Convert query to vector
         query_vector = embed_query(query)
         if query_vector is None:
             return ""
 
-        # Calculate similarity between query and all chunks
-        query_vector_2d = query_vector.reshape(1, -1)
         embeddings_2d = np.array(embeddings)
-        similarities = cosine_similarity(query_vector_2d, embeddings_2d)[0]
+        # Using dot product directly since embeddings are normalized
+        similarities = np.dot(embeddings_2d, query_vector)
 
-        # Get top K most similar chunks
-        top_indices = np.argsort(similarities)[::-1][:TOP_K_RESULTS]
-        top_chunks = [chunks[i] for i in top_indices if similarities[i] > 0.2]
+        n_chunks = len(similarities)
+        k = TOP_K_RESULTS if TOP_K_RESULTS < n_chunks else n_chunks
 
-        if not top_chunks:
+        if k == 0:
             return ""
+
+        if k < n_chunks:
+            top_indices = np.argpartition(similarities, -k)[-k:]
+        else:
+            top_indices = np.arange(n_chunks)
+
+        unique_scores = {}
+        for idx in top_indices:
+            score = similarities[idx]
+            if score > MIN_SIMILARITY_THRESHOLD:
+                unique_scores[score] = idx
+
+        if not unique_scores:
+            return ""
+
+        sorted_scores = sorted(unique_scores.keys(), reverse=True)[:TOP_K_RESULTS]
+        top_chunks = [chunks[unique_scores[s]] for s in sorted_scores]
 
         return "\n\n".join(top_chunks)
 

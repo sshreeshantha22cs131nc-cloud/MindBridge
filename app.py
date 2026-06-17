@@ -20,9 +20,6 @@ from utils.mood_tracker_utils import (
     get_mood_affirmation, CRISIS_RESPONSE
 )
 
-# ─────────────────────────────────────────────
-# PAGE CONFIGURATION — must be first Streamlit call
-# ─────────────────────────────────────────────
 st.set_page_config(
     page_title=f"{APP_ICON} {APP_TITLE}",
     page_icon=APP_ICON,
@@ -30,9 +27,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ─────────────────────────────────────────────
-# CUSTOM CSS — Beautiful calming design
-# ─────────────────────────────────────────────
 st.markdown("""
 <style>
     /* ── Import Google Fonts ── */
@@ -208,10 +202,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────
-# SESSION STATE INITIALIZATION
-# Session state persists data across reruns
-# ─────────────────────────────────────────────
+
 if "messages" not in st.session_state:
     st.session_state.messages = []          # Chat history
 

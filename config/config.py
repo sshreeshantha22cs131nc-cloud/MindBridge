@@ -6,6 +6,10 @@ When uploading to GitHub, replace actual keys with os.environ.get() calls.
 """
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ─────────────────────────────────────────────
 # GROQ API KEY — get yours free at https://console.groq.com

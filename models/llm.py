@@ -13,7 +13,11 @@ from config.config import GROQ_API_KEY, GROQ_MODEL, MAX_TOKENS_CONCISE, MAX_TOKE
 # Initialize Groq client once (reused across calls)
 # ─────────────────────────────────────────────
 try:
-    client = Groq(api_key=GROQ_API_KEY)
+    if not GROQ_API_KEY or not GROQ_API_KEY.strip():
+        print("[ERROR] Groq API key is empty.")
+        client = None
+    else:
+        client = Groq(api_key=GROQ_API_KEY)
 except Exception as e:
     print(f"[ERROR] Failed to initialize Groq client: {e}")
     client = None
@@ -54,8 +58,8 @@ def get_llm_response(user_message: str, context: str = "", mode: str = "Detailed
     """
 
     # Validate client
-    if client is None:
-        return "⚠️ I'm having trouble connecting right now. Please check your API key in config/config.py."
+    if client is None or not GROQ_API_KEY or not GROQ_API_KEY.strip():
+        return "⚠️ I'm having trouble connecting right now. Please check your API key in the .env file."
 
     try:
         # ── Build the mode instruction ──

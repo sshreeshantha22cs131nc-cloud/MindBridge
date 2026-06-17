@@ -32,7 +32,7 @@ def search_web(query: str, num_results: int = 4) -> str:
     try:
         # ── Validate API key ──
         if not SERPER_API_KEY or SERPER_API_KEY == "your_serper_api_key_here":
-            return "⚠️ Web search is not configured. Please add your Serper API key in config/config.py."
+            return "⚠️ Web search is not configured. Please add your Serper API key in the .env file."
 
         # ── Make the API request ──
         headers = {
