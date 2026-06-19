@@ -1,9 +1,4 @@
 """
-utils/rag_utils.py — RAG (Retrieval-Augmented Generation) Logic
-----------------------------------------------------------------
-RAG means: instead of the LLM answering from memory alone,
-we RETRIEVE relevant text from uploaded documents and give it
-to the LLM as extra context.
 
 Flow:
 1. User uploads a PDF/TXT document
@@ -121,19 +116,7 @@ def build_vector_store(chunks: list) -> dict:
 
 
 def retrieve_relevant_chunks(query: str, vector_store: dict) -> str:
-    """
-    Finds the most relevant document chunks for a given query.
 
-    Optimized: Uses np.argpartition O(n) instead of np.argsort O(n log n)
-    for selecting top-K elements.
-
-    Parameters:
-    - query: User's question
-    - vector_store: The dict created by build_vector_store()
-
-    Returns:
-    - Concatenated relevant chunks as a single string
-    """
     try:
         if not vector_store or not vector_store.get("chunks"):
             return ""
@@ -149,7 +132,7 @@ def retrieve_relevant_chunks(query: str, vector_store: dict) -> str:
             return ""
 
         embeddings_2d = np.array(embeddings)
-        # Using dot product directly since embeddings are normalized
+        
         similarities = np.dot(embeddings_2d, query_vector)
 
         n_chunks = len(similarities)

@@ -1,11 +1,4 @@
-"""
-app.py — MindBridge: Your Emotional Wellness Companion
-=======================================================
-Main Streamlit application file.
-This is where everything comes together — UI, RAG, web search, LLM.
-
-To run: streamlit run app.py
-"""
+ 
 
 import streamlit as st
 import time
@@ -121,12 +114,20 @@ st.markdown("""
         background: rgba(15, 12, 41, 0.9) !important;
         border-right: 1px solid rgba(255,255,255,0.05);
     }
+    
+    /* Force sidebar text to be visible against dark background */
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] div {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
 
     /* ── Sidebar Text ── */
     .sidebar-header {
         font-family: 'DM Serif Display', serif;
         font-size: 1.3rem;
-        color: #a8edea;
+        color: #a8edea !important;
         margin-bottom: 0.5rem;
     }
 
@@ -366,41 +367,44 @@ if not st.session_state.messages:
                 st.rerun()
 
 # ── Display Chat History ──
+def render_msg(msg):
+    if msg["role"] == "user":
+        st.markdown(f"""
+        <div style="display:flex; justify-content:flex-end; margin:8px 0;">
+            <div class="user-bubble">{msg["content"]}</div>
+        </div>""", unsafe_allow_html=True)
+    else:
+        # Build source tags
+        source_tags = ""
+        if msg.get("used_rag"):
+            source_tags += '<span class="source-tag">📄 From Document</span>'
+        if msg.get("used_web"):
+            source_tags += '<span class="source-tag">🌐 Web Search</span>'
+
+        mood_badge = ""
+        if msg.get("mood") and msg["mood"] != "😐 Neutral":
+            color = get_mood_color(msg["mood"])
+            mood_badge = f'<div><span class="mood-badge" style="background:{color}22; color:{color}; border:1px solid {color}44;">{msg["mood"]} detected</span></div>'
+
+        # Render bot label
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; margin-top:8px;">
+            <span style="font-size:1.2rem;">🧠</span>
+            <span style="color:#718096; font-size:0.75rem;">MindBridge</span>
+        </div>""", unsafe_allow_html=True)
+
+        # Render message content safely
+        st.markdown(f'<div class="bot-bubble">{msg["content"]}</div>', unsafe_allow_html=True)
+
+        # Render source + mood badges
+        if source_tags or mood_badge:
+            st.markdown(source_tags + mood_badge, unsafe_allow_html=True)
+
+
 chat_container = st.container()
 with chat_container:
     for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            st.markdown(f"""
-            <div style="display:flex; justify-content:flex-end; margin:8px 0;">
-                <div class="user-bubble">{msg["content"]}</div>
-            </div>""", unsafe_allow_html=True)
-        else:
-            # Build source tags
-            source_tags = ""
-            if msg.get("used_rag"):
-                source_tags += '<span class="source-tag">📄 From Document</span>'
-            if msg.get("used_web"):
-                source_tags += '<span class="source-tag">🌐 Web Search</span>'
-
-            mood_badge = ""
-            if msg.get("mood") and msg["mood"] != "😐 Neutral":
-                color = get_mood_color(msg["mood"])
-                mood_badge = f'<div><span class="mood-badge" style="background:{color}22; color:{color}; border:1px solid {color}44;">{msg["mood"]} detected</span></div>'
-
-            # Render bot label
-            st.markdown(f"""
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; margin-top:8px;">
-                <span style="font-size:1.2rem;">🧠</span>
-                <span style="color:#718096; font-size:0.75rem;">MindBridge</span>
-            </div>""", unsafe_allow_html=True)
-
-            # Render message content safely
-            st.markdown(f'<div class="bot-bubble">{msg["content"]}</div>', unsafe_allow_html=True)
-
-            # Render source + mood badges
-            if source_tags or mood_badge:
-                st.markdown(source_tags + mood_badge, unsafe_allow_html=True)
-
+        render_msg(msg)
 
 # ─────────────────────────────────────────────
 # CHAT INPUT & RESPONSE LOGIC
@@ -416,75 +420,81 @@ if not user_input and prefill_value:
     user_input = prefill_value
 
 if user_input and user_input.strip():
-    # ── Add user message to history ──
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    # ── Add user message to history and render instantly ──
+    user_msg = {"role": "user", "content": user_input}
+    st.session_state.messages.append(user_msg)
     st.session_state.message_count += 1
+    
+    with chat_container:
+        render_msg(user_msg)
 
-    # ── Detect mood ──
-    detected_mood = detect_mood(user_input)
-    if detected_mood not in st.session_state.mood_history:
-        st.session_state.mood_history.append(detected_mood)
+        # ── Detect mood ──
+        detected_mood = detect_mood(user_input)
+        if detected_mood not in st.session_state.mood_history:
+            st.session_state.mood_history.append(detected_mood)
 
-    # ── Check for crisis ──
-    if is_crisis_message(user_input):
-        st.session_state.messages.append({
+        # ── Check for crisis ──
+        if is_crisis_message(user_input):
+            crisis_msg = {
+                "role": "assistant",
+                "content": CRISIS_RESPONSE,
+                "mood": detected_mood,
+                "used_rag": False,
+                "used_web": False
+            }
+            st.session_state.messages.append(crisis_msg)
+            render_msg(crisis_msg)
+            st.stop()
+
+        # ── Build context from RAG and/or Web Search ──
+        context = ""
+        used_rag = False
+        used_web = False
+
+        with st.spinner("🧠 MindBridge is thinking..."):
+
+            # Step 1: Try RAG (document retrieval)
+            if st.session_state.vector_store and st.session_state.vector_store.get("chunks"):
+                rag_context = retrieve_relevant_chunks(user_input, st.session_state.vector_store)
+                if rag_context:
+                    context += f"[From your uploaded document]\n{rag_context}\n\n"
+                    used_rag = True
+
+            # Step 2: Try web search if enabled and relevant
+            if enable_web_search and should_search_web(user_input):
+                time.sleep(0.3)  # Small delay to avoid rate limits
+                web_context = search_web(f"mental health {user_input} India")
+                if web_context and "⚠️" not in web_context:
+                    context += f"[From live web search]\n{web_context}"
+                    used_web = True
+                    st.session_state.web_searches += 1
+
+            # Step 3: Build chat history for LLM memory
+            chat_history = [
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages[:-1]  # Exclude the current message
+            ]
+
+            # Step 4: Get LLM response
+            bot_response = get_llm_response(
+                user_message=user_input,
+                context=context,
+                mode=response_mode,
+                chat_history=chat_history
+            )
+
+        # ── Add mood affirmation if mood detected ──
+        affirmation = get_mood_affirmation(detected_mood)
+        if detected_mood != "😐 Neutral" and affirmation not in bot_response:
+            bot_response = f"*{affirmation}*\n\n{bot_response}"
+
+        # ── Save and render assistant response ──
+        bot_msg = {
             "role": "assistant",
-            "content": CRISIS_RESPONSE,
+            "content": bot_response,
             "mood": detected_mood,
-            "used_rag": False,
-            "used_web": False
-        })
-        st.rerun()
-
-    # ── Build context from RAG and/or Web Search ──
-    context = ""
-    used_rag = False
-    used_web = False
-
-    with st.spinner("🧠 MindBridge is thinking..."):
-
-        # Step 1: Try RAG (document retrieval)
-        if st.session_state.vector_store and st.session_state.vector_store.get("chunks"):
-            rag_context = retrieve_relevant_chunks(user_input, st.session_state.vector_store)
-            if rag_context:
-                context += f"[From your uploaded document]\n{rag_context}\n\n"
-                used_rag = True
-
-        # Step 2: Try web search if enabled and relevant
-        if enable_web_search and should_search_web(user_input):
-            time.sleep(0.3)  # Small delay to avoid rate limits
-            web_context = search_web(f"mental health {user_input} India")
-            if web_context and "⚠️" not in web_context:
-                context += f"[From live web search]\n{web_context}"
-                used_web = True
-                st.session_state.web_searches += 1
-
-        # Step 3: Build chat history for LLM memory
-        chat_history = [
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state.messages[:-1]  # Exclude the current message
-        ]
-
-        # Step 4: Get LLM response
-        bot_response = get_llm_response(
-            user_message=user_input,
-            context=context,
-            mode=response_mode,
-            chat_history=chat_history
-        )
-
-    # ── Add mood affirmation if mood detected ──
-    affirmation = get_mood_affirmation(detected_mood)
-    if detected_mood != "😐 Neutral" and affirmation not in bot_response:
-        bot_response = f"*{affirmation}*\n\n{bot_response}"
-
-    # ── Save assistant response ──
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": bot_response,
-        "mood": detected_mood,
-        "used_rag": used_rag,
-        "used_web": used_web
-    })
-
-    st.rerun()
+            "used_rag": used_rag,
+            "used_web": used_web
+        }
+        st.session_state.messages.append(bot_msg)
+        render_msg(bot_msg)
